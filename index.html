@@ -17,6 +17,8 @@
 
     <!-- Main Content Container -->
     <div class="container">
+
+
         <!-- Sacred Mantras Header -->
         <div class="mantra-panel">
             <div class="mantra-text invocation">
@@ -36,19 +38,7 @@
 
         <!-- Central Japa Counter -->
         <div class="counter-container floating-gentle">
-            <svg class="progress-ring" viewBox="0 0 280 280">
-                <defs>
-                    <filter id="glow">
-                        <feGaussianBlur stdDeviation="4" result="coloredBlur" />
-                        <feMerge>
-                            <feMergeNode in="coloredBlur" />
-                            <feMergeNode in="SourceGraphic" />
-                        </feMerge>
-                    </filter>
-                </defs>
-                <circle class="progress-ring-bg" cx="140" cy="140" r="120" />
-                <circle class="progress-ring-circle" cx="140" cy="140" r="120" id="progressCircle" />
-            </svg>
+
             <div class="counter-circle glass">
                 <div class="count-display" id="countDisplay">0</div>
                 <div class="space-hint">Press SPACE</div>
@@ -56,14 +46,34 @@
         </div>
 
         <!-- Dashboard Cards -->
-        <div class="dashboard">
-            <div class="dashboard-card glass floating-drift">
-                <div class="card-label">Total Count</div>
-                <div class="card-value" id="totalCount">0</div>
+        <div class="dashboard glass-panel">
+            <div class="dashboard-section left">
+                <!-- Timer Section -->
+                <div class="dashboard-card-timer">
+                    <div class="card-label">Timer</div>
+                    <div class="timer-display-small" id="timerDisplay">00:00</div>
+                    <div class="timer-mini-controls">
+                        <button class="mini-btn play" id="startTimerBtn">▶</button>
+                    </div>
+                </div>
+
+                <div class="dashboard-card-small">
+                    <div class="card-label">Total Count</div>
+                    <div class="card-value-small" id="totalCount">0</div>
+                </div>
             </div>
-            <div class="dashboard-card glass floating-drift-delayed">
-                <div class="card-label">Rounds Completed</div>
-                <div class="card-value" id="roundsCompleted">0</div>
+
+            <div class="vertical-separator"></div>
+
+            <div class="dashboard-section right">
+                <div class="dashboard-card-small">
+                    <div class="card-label">Rounds</div>
+                    <div class="card-value-small" id="roundsCompleted">0</div>
+                </div>
+
+                <button class="dashboard-card-reset red-glass" id="resetBtn" title="Reset All Counts">
+                    <div class="reset-label">RESET</div>
+                </button>
             </div>
         </div>
 
