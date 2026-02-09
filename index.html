@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hare Krishna Japa Counter</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <!-- Cosmic Background -->
+    <div class="cosmic-background">
+        <div class="stars"></div>
+        <div class="nebula"></div>
+    </div>
+
+    <!-- Main Content Container -->
+    <div class="container">
+        <!-- Sacred Mantras Header -->
+        <div class="mantra-panel floating-slow">
+            <div class="mantra-text invocation">
+                jaya sri-krishna-chaitanya prabhu nityananda<br>
+                sri-adwaita gadadhara srivasadi-gaura-bhakta-vrinda
+            </div>
+        </div>
+
+        <div class="mantra-panel maha-mantra floating-slow-delayed">
+            <div class="mantra-text">
+                Hare Krishna, Hare Krishna,<br>
+                Krishna Krishna, Hare Hare<br>
+                Hare Rama, Hare Rama,<br>
+                Rama Rama, Hare Hare
+            </div>
+        </div>
+
+        <!-- Central Japa Counter -->
+        <div class="counter-container floating-gentle">
+            <svg class="progress-ring" width="280" height="280">
+                <defs>
+                    <filter id="glow">
+                        <feGaussianBlur stdDeviation="4" result="coloredBlur" />
+                        <feMerge>
+                            <feMergeNode in="coloredBlur" />
+                            <feMergeNode in="SourceGraphic" />
+                        </feMerge>
+                    </filter>
+                </defs>
+                <circle class="progress-ring-bg" cx="140" cy="140" r="120" />
+                <circle class="progress-ring-circle" cx="140" cy="140" r="120" id="progressCircle" />
+            </svg>
+            <div class="counter-circle glass">
+                <div class="count-display" id="countDisplay">0</div>
+                <div class="space-hint">Press SPACE</div>
+            </div>
+        </div>
+
+        <!-- Dashboard Cards -->
+        <div class="dashboard">
+            <div class="dashboard-card glass floating-drift">
+                <div class="card-label">Current Count</div>
+                <div class="card-value" id="currentCount">0</div>
+            </div>
+            <div class="dashboard-card glass floating-drift-delayed">
+                <div class="card-label">Rounds Completed</div>
+                <div class="card-value" id="roundsCompleted">0</div>
+            </div>
+        </div>
+
+        <!-- Completion Message -->
+        <div class="completion-message glass" id="completionMessage">
+            <div class="completion-text">🙏 1 round completed 🙏</div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
