@@ -14,7 +14,7 @@ export default function Header() {
             <div className="flex items-center gap-4 px-6 py-3 rounded-[20px] bg-[#141e50]/30 backdrop-blur-[20px] border border-[#6496ff]/20 shadow-[0_10px_40px_rgba(0,0,0,0.4)] transition-all">
                 <SignedOut>
                     <SignInButton mode="modal">
-                        <button className="px-5 py-2 text-sm font-medium text-blue-100 hover:text-white transition-colors hover:bg-white/10 rounded-md">
+                        <button className="px-5 py-2 text-sm font-semibold text-blue-100 hover:text-white border border-white/20 bg-white/5 hover:bg-white/10 rounded-md transition-all shadow-sm">
                             Sign In
                         </button>
                     </SignInButton>
