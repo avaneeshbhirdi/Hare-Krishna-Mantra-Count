@@ -10,18 +10,18 @@ import {
 
 export default function Header() {
     return (
-        <header className="fixed top-4 right-4 z-50">
-            <div className="flex items-center gap-4 px-6 py-3 rounded-full bg-blue-950/30 backdrop-blur-md border border-white/10 shadow-lg transition-all hover:bg-blue-950/40">
+        <header className="fixed top-6 right-6 z-50">
+            <div className="flex items-center gap-4 px-6 py-3 rounded-[20px] bg-[#141e50]/30 backdrop-blur-[20px] border border-[#6496ff]/20 shadow-[0_10px_40px_rgba(0,0,0,0.4)] transition-all">
                 <SignedOut>
                     <SignInButton mode="modal">
-                        <button className="px-4 py-2 text-sm font-medium text-white/90 hover:text-white transition-colors hover:bg-white/10 rounded-full">
+                        <button className="px-5 py-2 text-sm font-medium text-blue-100 hover:text-white transition-colors hover:bg-white/10 rounded-md">
                             Sign In
                         </button>
                     </SignInButton>
-                    <div className="w-[1px] h-4 bg-white/20"></div>
+                    <div className="w-[1px] h-5 bg-white/20"></div>
                     <SignUpButton mode="modal">
-                        <button className="px-4 py-2 text-sm font-medium bg-white/10 hover:bg-white/20 text-white rounded-full transition-all border border-white/10 shadow-sm backdrop-blur-sm">
-                            Get Started
+                        <button className="px-5 py-2 text-sm font-semibold text-blue-100 hover:text-white border border-white/20 bg-white/5 hover:bg-white/10 rounded-md transition-all shadow-sm">
+                            Sign Up
                         </button>
                     </SignUpButton>
                 </SignedOut>
