@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import { ClerkProvider } from '@clerk/nextjs'
 import { Inter, Cinzel } from 'next/font/google'
-import Header from '@/components/Header'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
@@ -21,8 +20,7 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en">
         <body className={`${inter.variable} ${cinzel.variable} antialiased min-h-screen font-sans`}>
-          <Header />
-          <main className="relative z-10">
+          <main className="relative z-10 w-full h-screen flex flex-col justify-center items-center">
             {children}
           </main>
         </body>
