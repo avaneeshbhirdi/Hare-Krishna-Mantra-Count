@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useUser, SignInButton, SignUpButton, SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
+import { useUser } from '@clerk/nextjs';
+import Header from '../components/Header';
 
 const MAX_COUNT = 108;
 
@@ -20,7 +21,6 @@ export default function Home() {
       const data = user.unsafeMetadata as any;
       if (data.savedTotalCount !== undefined) setTotalCount(data.savedTotalCount);
       if (data.savedRounds !== undefined) setRoundsCompleted(data.savedRounds);
-      if (data.savedCurrentCount !== undefined) setCurrentCount(data.savedCurrentCount);
     }
   }, [isLoaded, isSignedIn, user]);
 
@@ -33,8 +33,7 @@ export default function Home() {
       user.update({
         unsafeMetadata: {
           savedTotalCount: totalCount,
-          savedRounds: roundsCompleted,
-          savedCurrentCount: currentCount
+          savedRounds: roundsCompleted
         }
       }).catch(err => console.error("Failed to auto-save:", err));
     }, 2000); // Save after 2 seconds of inactivity to prevent rate limits
@@ -134,7 +133,7 @@ export default function Home() {
 
   // Increment Counter Logic
   const incrementCount = () => {
-    const isFreshStart = (totalCount === 0 && timerSeconds === 0 && !isTimerRunning);
+    const isFreshStart = (timerSeconds === 0 && !isTimerRunning);
 
     if (isFreshStart) {
       startTimer();
@@ -257,45 +256,12 @@ export default function Home() {
         <div className="nebula"></div>
       </div>
 
+      <Header />
+
       {/* Main Game Area - Centered Block */}
       <div className="flex flex-col items-center justify-center w-full max-w-4xl z-10 gap-8 transition-all duration-500">
 
-        {/* Auth Buttons - Inline */}
-        <div className="flex items-center justify-center gap-6 mb-2 w-full">
-          <SignedOut>
-            <SignInButton mode="modal">
-              <button className="px-6 py-2 text-xs font-semibold uppercase tracking-widest text-blue-100/80 hover:text-white border border-white/10 hover:border-white/30 bg-white/5 hover:bg-white/10 rounded-full transition-all active:scale-95 shadow-lg shadow-blue-900/20">
-                Sign In
-              </button>
-            </SignInButton>
 
-            <SignUpButton mode="modal">
-              <button className="px-6 py-2 text-xs font-semibold uppercase tracking-widest text-blue-100/80 hover:text-white border border-white/10 hover:border-white/30 bg-white/5 hover:bg-white/10 rounded-full transition-all active:scale-95 shadow-lg shadow-blue-900/20">
-                Sign Up
-              </button>
-            </SignUpButton>
-          </SignedOut>
-
-          <SignedIn>
-            <div className="flex items-center gap-4 px-5 py-2 rounded-full bg-[#141e50]/40 backdrop-blur-xl border border-white/10 shadow-lg">
-              <span className="text-xs font-medium text-blue-100/60 uppercase tracking-widest hidden sm:block">
-                Devotee
-              </span>
-              <div className="w-px h-4 bg-white/10 hidden sm:block"></div>
-              <UserButton
-                appearance={{
-                  elements: {
-                    userButtonAvatarBox: "w-8 h-8 ring-2 ring-white/10 hover:ring-white/30 transition-all",
-                    userButtonPopoverCard: "bg-[#0a0e27] border border-white/10 shadow-2xl backdrop-blur-xl",
-                    userButtonPopoverActionButton: "hover:bg-white/5 text-blue-100",
-                    userButtonPopoverActionButtonText: "text-blue-100",
-                    userButtonPopoverFooter: "hidden"
-                  }
-                }}
-              />
-            </div>
-          </SignedIn>
-        </div>
 
         {/* Mantra Header */}
         <div className="mantra-panel">

@@ -13,13 +13,13 @@ export default function Header() {
         <header className="fixed top-6 right-6 z-50 flex items-center gap-4">
             <SignedOut>
                 <SignInButton mode="modal">
-                    <button className="cursor-pointer px-8 py-3 text-xs font-semibold uppercase tracking-widest text-blue-100/90 hover:text-white bg-[#141e50]/40 backdrop-blur-xl border border-white/20 hover:border-white/40 shadow-[0_0_15px_rgba(100,150,255,0.1)] hover:shadow-[0_0_25px_rgba(100,150,255,0.25)] rounded-2xl transition-all active:scale-95">
+                    <button className="cursor-pointer px-6 py-2.5 text-[10px] font-semibold uppercase tracking-widest text-blue-100/60 hover:text-white bg-[#141e50]/40 backdrop-blur-xl border border-white/20 hover:border-white/40 shadow-[0_0_15px_rgba(100,150,255,0.1)] hover:shadow-[0_0_25px_rgba(100,150,255,0.25)] rounded-lg transition-all active:scale-95">
                         Sign In
                     </button>
                 </SignInButton>
 
                 <SignUpButton mode="modal">
-                    <button className="cursor-pointer px-8 py-3 text-xs font-semibold uppercase tracking-widest text-blue-100/90 hover:text-white bg-[#141e50]/40 backdrop-blur-xl border border-white/20 hover:border-white/40 shadow-[0_0_15px_rgba(100,150,255,0.1)] hover:shadow-[0_0_25px_rgba(100,150,255,0.25)] rounded-2xl transition-all active:scale-95">
+                    <button className="cursor-pointer px-6 py-2.5 text-[10px] font-semibold uppercase tracking-widest text-blue-100/60 hover:text-white bg-[#141e50]/40 backdrop-blur-xl border border-white/20 hover:border-white/40 shadow-[0_0_15px_rgba(100,150,255,0.1)] hover:shadow-[0_0_25px_rgba(100,150,255,0.25)] rounded-lg transition-all active:scale-95">
                         Sign Up
                     </button>
                 </SignUpButton>
