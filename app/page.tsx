@@ -307,24 +307,26 @@ export default function Home() {
       <Header totalCount={totalCount} roundsCompleted={roundsCompleted} historyLog={historyLog} />
 
       {/* Main Game Area - Centered Block */}
-      <div className="flex flex-col items-center justify-center w-full max-w-4xl z-10 gap-8 transition-all duration-500">
+      <div className="flex flex-col items-center justify-center w-full max-w-4xl z-10 gap-6 transition-all duration-500">
 
 
 
-        {/* Mantra Header */}
-        <div className="mantra-panel">
-          <div className="mantra-text invocation">
-            jaya sri-krishna-chaitanya prabhu nityananda<br />
-            sri-adwaita gadadhara srivasadi-gaura-bhakta-vrinda
+        <div className="flex flex-col gap-4 w-fit">
+          {/* Mantra Header */}
+          <div className="mantra-panel">
+            <div className="mantra-text invocation">
+              jaya sri-krishna-chaitanya prabhu nityananda<br />
+              sri-adwaita gadadhara srivasadi-gaura-bhakta-vrinda
+            </div>
           </div>
-        </div>
 
-        <div className="mantra-panel maha-mantra">
-          <div className="mantra-text">
-            Hare Krishna, Hare Krishna,<br />
-            Krishna Krishna, Hare Hare<br />
-            Hare Rama, Hare Rama,<br />
-            Rama Rama, Hare Rama
+          <div className="mantra-panel maha-mantra">
+            <div className="mantra-text">
+              Hare Krishna, Hare Krishna,<br />
+              Krishna Krishna, Hare Hare<br />
+              Hare Rama, Hare Rama,<br />
+              Rama Rama, Hare Rama
+            </div>
           </div>
         </div>
 

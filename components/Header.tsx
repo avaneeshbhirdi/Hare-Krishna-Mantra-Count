@@ -19,7 +19,7 @@ export default function Header({ totalCount = 0, roundsCompleted = 0, historyLog
     const [isOpen, setIsOpen] = useState(false);
 
     return (
-        <header className="fixed top-6 sm:top-8 left-0 w-full px-6 sm:px-12 z-50 flex items-start justify-between pointer-events-none">
+        <header className="fixed top-6 sm:top-8 left-0 w-full px-10 sm:px-12 z-50 flex items-start justify-between pointer-events-none">
             {/* Left Side: Sadhana Log (Expanding) */}
             <div className="pointer-events-auto flex flex-col items-start relative">
                 <button
