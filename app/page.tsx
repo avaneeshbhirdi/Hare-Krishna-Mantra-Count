@@ -13,7 +13,9 @@ export default function Home() {
   const [totalCount, setTotalCount] = useState(0);
   const [isRoundComplete, setIsRoundComplete] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(0);
+  const [historyLog, setHistoryLog] = useState<any[]>([]);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const sessionStartTimeRef = useRef<number | null>(null);
 
   // Sync with Cloud on Load
   useEffect(() => {
@@ -33,13 +35,14 @@ export default function Home() {
       user.update({
         unsafeMetadata: {
           savedTotalCount: totalCount,
-          savedRounds: roundsCompleted
+          savedRounds: roundsCompleted,
+          historyLog: historyLog
         }
       }).catch(err => console.error("Failed to auto-save:", err));
     }, 2000); // Save after 2 seconds of inactivity to prevent rate limits
 
     return () => clearTimeout(timeoutId);
-  }, [totalCount, roundsCompleted, currentCount, isLoaded, isSignedIn, user]);
+  }, [totalCount, roundsCompleted, currentCount, isLoaded, isSignedIn, user, historyLog]);
 
   // Refs for non-reactive state or imperative APIs
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -167,6 +170,39 @@ export default function Home() {
       setCurrentCount(newCount);
       setTotalCount(prev => prev + 1);
 
+      // Session Tracking Logic
+      if (!sessionStartTimeRef.current) {
+        sessionStartTimeRef.current = Date.now();
+      }
+
+      const sessionKey = sessionStartTimeRef.current;
+
+      setHistoryLog(prev => {
+        const existingIndex = prev.findIndex(item => item.id === sessionKey);
+
+        if (existingIndex >= 0) {
+          const updated = [...prev];
+          updated[existingIndex] = {
+            ...updated[existingIndex],
+            counts: updated[existingIndex].counts + 1,
+            // rounds updated separately in completeRound
+          };
+          return updated;
+        } else {
+          const now = new Date();
+          const newEntry = {
+            id: sessionKey,
+            date: now.toLocaleDateString(),
+            day: now.toLocaleDateString('en-US', { weekday: 'long' }),
+            time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            timestamp: now.getTime(),
+            counts: 1,
+            rounds: 0
+          };
+          return [newEntry, ...prev].slice(0, 50);
+        }
+      });
+
       // Scale animation
       if (countDisplayRef.current) {
         countDisplayRef.current.style.transform = 'scale(1.1)';
@@ -183,17 +219,29 @@ export default function Home() {
 
   const completeRound = () => {
     setRoundsCompleted(prev => prev + 1);
+
+    // Update Rounds in History
+    if (sessionStartTimeRef.current) {
+      setHistoryLog(prev => {
+        const index = prev.findIndex(item => item.id === sessionStartTimeRef.current);
+        if (index >= 0) {
+          const updated = [...prev];
+          updated[index] = { ...updated[index], rounds: updated[index].rounds + 1 };
+          return updated;
+        }
+        return prev;
+      });
+    }
     setIsRoundComplete(true);
     playCompletionSound();
     vibrateDevice();
   };
 
   const handleReset = () => {
-    if (confirm('Are you sure you want to reset all counts and timer?')) {
+    if (confirm('Reset currrent round progress? This will reset your count to 0.')) {
       setCurrentCount(0);
-      setTotalCount(0);
-      setRoundsCompleted(0);
       setIsRoundComplete(false);
+      // We do NOT reset totalCount or roundsCompleted as those are lifetime stats
       resetTimer();
     }
   };
@@ -256,7 +304,7 @@ export default function Home() {
         <div className="nebula"></div>
       </div>
 
-      <Header />
+      <Header totalCount={totalCount} roundsCompleted={roundsCompleted} historyLog={historyLog} />
 
       {/* Main Game Area - Centered Block */}
       <div className="flex flex-col items-center justify-center w-full max-w-4xl z-10 gap-8 transition-all duration-500">
@@ -332,6 +380,8 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+
 
       {/* Completion Message */}
       <div className={`completion-message glass ${isRoundComplete ? 'show' : ''}`} id="completionMessage">
