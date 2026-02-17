@@ -105,40 +105,72 @@ body {
 }
 
 /* Glassmorphism Base */
+/* Glassmorphism Base - Updated for Premium Feel */
 .glass {
-  background: rgba(20, 30, 80, 0.25);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(100, 150, 255, 0.2);
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow:
-    0 8px 32px 0 rgba(0, 0, 0, 0.4),
+    0 20px 50px -12px rgba(0, 0, 0, 0.7),
     inset 0 1px 0 0 rgba(255, 255, 255, 0.1),
-    0 0 20px rgba(100, 150, 255, 0.1);
+    0 0 40px rgba(100, 150, 255, 0.05);
+  /* Subtle ambient glow */
 }
 
 /* Mantra Panels */
+/* Mantra Panels - Floating text style */
 .mantra-panel {
   text-align: center;
-  padding: 1rem 2rem;
-  border-radius: 20px;
-  background: rgba(20, 30, 80, 0.2);
-  backdrop-filter: blur(15px);
-  -webkit-backdrop-filter: blur(15px);
-  border: 1px solid rgba(100, 150, 255, 0.15);
+  padding: 1.5rem 3rem;
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(20, 30, 80, 0.15) 0%, rgba(10, 14, 39, 0.4) 100%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   box-shadow:
-    0 8px 32px 0 rgba(0, 0, 0, 0.3),
-    0 0 15px rgba(100, 150, 255, 0.08);
+    0 10px 40px -10px rgba(0, 0, 0, 0.5),
+    0 0 20px rgba(15, 23, 42, 0.4);
   width: 100%;
   max-width: 90%;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle shine effect on panel */
+.mantra-panel::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.03), transparent);
+  transform: skewX(-25deg);
+  animation: shine 8s infinite ease-in-out;
+}
+
+@keyframes shine {
+
+  0%,
+  40% {
+    left: -100%;
+  }
+
+  100% {
+    left: 200%;
+  }
 }
 
 .mantra-text {
   font-family: var(--font-cinzel), serif;
-  font-size: 1.1rem;
-  line-height: 1.8;
-  color: #e8eaf6;
-  text-shadow: 0 0 10px rgba(200, 220, 255, 0.3);
-  letter-spacing: 0.5px;
+  font-size: 1.25rem;
+  line-height: 1.6;
+  color: #e2e8f0;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  letter-spacing: 0.05em;
+  position: relative;
+  z-index: 10;
 }
 
 .invocation {
@@ -169,63 +201,77 @@ body {
 }
 
 /* Counter Circle */
+/* Counter Circle */
 .counter-circle {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 75%;
-  height: 75%;
+  position: relative;
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: box-shadow 0.3s ease, transform 0.1s ease;
-  border: 2px solid rgba(100, 150, 255, 0.3);
-  overflow: hidden;
-  /* Ensure fill stays within circle */
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: radial-gradient(circle at 50% 30%, rgba(30, 41, 59, 0.4), rgba(15, 23, 42, 0.8));
+  box-shadow:
+    0 20px 60px -10px rgba(0, 0, 0, 0.6),
+    inset 0 2px 20px rgba(255, 255, 255, 0.05),
+    0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
 .counter-circle:hover {
-  transform: translate(-50%, -50%) scale(1.05);
+  transform: scale(1.02);
   box-shadow:
-    0 8px 32px 0 rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.15),
-    0 0 30px rgba(100, 150, 255, 0.2);
+    0 25px 70px -12px rgba(0, 0, 0, 0.7),
+    inset 0 4px 30px rgba(255, 255, 255, 0.1),
+    0 0 30px rgba(100, 150, 255, 0.15);
+  border-color: rgba(100, 150, 255, 0.3);
+}
+
+.counter-circle:active {
+  transform: scale(0.96);
 }
 
 .count-display {
-  font-size: 3rem;
-  font-weight: 600;
-  color: #ffffff;
-  text-shadow: 0 0 20px rgba(100, 150, 255, 0.6);
-  margin-bottom: 0.5rem;
+  font-family: var(--font-cinzel), serif;
+  font-size: 4.5rem;
+  font-weight: 500;
+  color: #f8fafc;
+  text-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.5),
+    0 0 40px rgba(100, 150, 255, 0.3);
+  margin-bottom: 0.2rem;
+  z-index: 2;
 }
 
 .space-hint {
-  font-size: 0.85rem;
-  color: #b0b8d4;
+  font-family: var(--font-inter), sans-serif;
+  font-size: 0.75rem;
+  color: #64748b;
   text-transform: uppercase;
-  letter-spacing: 2px;
-  opacity: 0.7;
+  letter-spacing: 0.25em;
+  opacity: 0.8;
+  margin-top: -0.5rem;
+  font-weight: 500;
 }
 
+/* Dashboard with Glass Panel */
 /* Dashboard with Glass Panel */
 .dashboard.glass-panel {
   display: flex;
   align-items: center;
-  background: rgba(20, 30, 80, 0.3);
+  background: rgba(15, 23, 42, 0.6);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(100, 150, 255, 0.2);
-  /* Outer glass border */
-  border-radius: 20px;
-  padding: 1rem 1.5rem;
-  gap: 1.5rem;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
-  margin-top: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 100px;
+  /* Pill shape */
+  padding: 0.75rem 2rem;
+  gap: 2rem;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+  margin-top: 1rem;
 }
 
 .dashboard-section {
@@ -287,41 +333,44 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-width: 80px;
+  min-width: 60px;
 }
 
 .card-value-small {
-  font-size: 1.8rem;
+  font-size: 1.5rem;
   font-weight: 600;
-  color: #ffffff;
-  text-shadow: 0 0 10px rgba(100, 150, 255, 0.5);
+  color: #f1f5f9;
+  font-family: var(--font-cinzel), serif;
+  text-shadow: 0 0 20px rgba(100, 150, 255, 0.3);
+  line-height: 1;
 }
 
 /* Reset Button (Red Glass) */
+/* Reset Button (Ghost Style) */
 .dashboard-card-reset {
-  background: rgba(220, 50, 50, 0.25);
-  border: 1px solid rgba(255, 100, 100, 0.3);
-  border-radius: 12px;
-  padding: 0.8rem 1.2rem;
+  background: transparent;
+  border: 1px solid rgba(248, 113, 113, 0.2);
+  border-radius: 9999px;
+  padding: 0.6rem 1.2rem;
   cursor: pointer;
   transition: all 0.3s ease;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: #ffcdd2;
+  color: #fca5a5;
 }
 
 .dashboard-card-reset:hover {
-  background: rgba(220, 50, 50, 0.4);
-  box-shadow: 0 0 20px rgba(255, 50, 50, 0.3);
-  transform: translateY(-2px);
+  background: rgba(220, 38, 38, 0.15);
+  border-color: rgba(248, 113, 113, 0.5);
+  box-shadow: 0 0 20px rgba(220, 38, 38, 0.2);
 }
 
 .reset-label {
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   font-weight: 600;
-  letter-spacing: 1px;
+  letter-spacing: 0.15em;
+  font-family: var(--font-inter), sans-serif;
 }
 
 .card-label {
