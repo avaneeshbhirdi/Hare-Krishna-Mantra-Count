@@ -337,7 +337,7 @@ export default function Home() {
         </div>
 
         {/* Central Japa Counter */}
-        <div className="counter-container floating-gentle">
+        <div className="counter-container">
           <div
             className="counter-circle glass"
             ref={counterCircleRef}
@@ -379,7 +379,7 @@ export default function Home() {
             </div>
 
             <button
-              className="dashboard-card-reset red-glass"
+              className="dashboard-card-reset"
               onClick={handleReset}
               title="Reset All Counts"
             >

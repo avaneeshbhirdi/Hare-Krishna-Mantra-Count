@@ -27,9 +27,9 @@ export default function Header({ totalCount = 0, roundsCompleted = 0, historyLog
                 <div className="relative">
                     <button
                         onClick={() => setIsOpen(!isOpen)}
-                        className={`flex items-center gap-2 px-5 py-2.5 rounded-full border transition-all duration-300 backdrop-blur-md shadow-[0_0_20px_rgba(0,0,0,0.2)] group ${isOpen
-                                ? 'bg-blue-900/40 border-yellow-400/50 text-yellow-100'
-                                : 'bg-[#0f172a]/40 border-white/10 text-blue-100/80 hover:bg-[#1a237e]/50 hover:border-white/30 hover:text-white'
+                        className={`cursor-pointer flex items-center gap-2 px-5 py-2.5 rounded-full border transition-all duration-300 backdrop-blur-md shadow-[0_0_20px_rgba(0,0,0,0.2)] group ${isOpen
+                            ? 'bg-blue-900/40 border-yellow-400/50 text-yellow-100'
+                            : 'bg-[#0f172a]/40 border-white/10 text-blue-100/80 hover:bg-[#1a237e]/50 hover:border-white/30 hover:text-white'
                             }`}
                     >
                         <span className={`text-sm transition-transform duration-500 ${isOpen ? 'rotate-180' : ''}`}>▼</span>
@@ -50,7 +50,7 @@ export default function Header({ totalCount = 0, roundsCompleted = 0, historyLog
                                 <span className="text-2xl font-bold text-white font-serif">{totalCount}</span>
                             </div>
                             <div className="p-4 flex flex-col items-center">
-                                <span className="text-[10px] uppercase text-yellow-500/80 tracking-widest mb-1">Rounds</span>
+                                <span className="text-[10px] uppercase text-yellow-500/80 tracking-widest mb-1">Total Rounds</span>
                                 <span className="text-2xl font-bold text-yellow-400 font-serif">{roundsCompleted}</span>
                             </div>
                         </div>
@@ -83,18 +83,21 @@ export default function Header({ totalCount = 0, roundsCompleted = 0, historyLog
                 </div>
             </div>
 
-            {/* Right Side: Auth - Moved down and to the right as requested */}
-            <div className="absolute top-6 right-6 sm:top-24 sm:right-16 pointer-events-auto transition-all duration-500">
+            {/* Right Side: Auth - Aligned with Sadhana Log */}
+            <div className="absolute top-6 right-6 sm:top-8 sm:right-10 pointer-events-auto transition-all duration-500">
                 <SignedOut>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-1 bg-[#0f172a]/80 backdrop-blur-2xl border border-white/10 rounded-full shadow-[0_0_30px_rgba(0,0,0,0.5)] p-1.5 transition-all w-fit pointer-events-auto hover:bg-[#1e293b]/90 hover:border-white/20">
                         <SignInButton mode="modal">
-                            <button className="hidden sm:block px-6 py-2.5 text-sm font-bold text-blue-200 transition-colors hover:text-white uppercase tracking-wider backdrop-blur-md rounded-full hover:bg-white/5 border border-transparent hover:border-white/10 shadow-sm">
+                            <button className="cursor-pointer px-6 py-2.5 text-xs font-bold text-blue-100 transition-all hover:bg-white/10 rounded-full uppercase tracking-widest hover:text-white">
                                 Sign In
                             </button>
                         </SignInButton>
 
+                        {/* Vertical Separator */}
+                        <div className="w-px h-5 bg-white/20"></div>
+
                         <SignUpButton mode="modal">
-                            <button className="px-8 py-3 rounded-full bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold uppercase tracking-widest shadow-[0_0_20px_rgba(37,99,235,0.4)] transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(37,99,235,0.6)] border border-white/10 backdrop-blur-md">
+                            <button className="cursor-pointer px-6 py-2.5 text-xs font-bold text-blue-100 transition-all hover:bg-white/10 rounded-full uppercase tracking-widest hover:text-white">
                                 Start Japa
                             </button>
                         </SignUpButton>
@@ -105,12 +108,12 @@ export default function Header({ totalCount = 0, roundsCompleted = 0, historyLog
                     <div className="flex items-center gap-4 bg-[#0a0e27]/60 px-4 pl-6 py-2 rounded-full border border-white/10 backdrop-blur-xl shadow-2xl">
                         <div className="hidden sm:flex flex-col items-end mr-1">
                             <span className="text-[10px] text-blue-300 uppercase tracking-wider">Welcome</span>
-                            <span className="text-sm font-semibold text-white">Devotee</span>
+                            <span className="text-xs font-semibold text-white">Devotee</span>
                         </div>
                         <UserButton
                             appearance={{
                                 elements: {
-                                    userButtonAvatarBox: "w-9 h-9 ring-2 ring-white/10 hover:ring-white/30 transition-all",
+                                    userButtonAvatarBox: "w-8 h-8 ring-2 ring-white/10 hover:ring-white/30 transition-all",
                                     userButtonPopoverCard: "bg-[#0f172a] border border-white/10 shadow-2xl backdrop-blur-xl",
                                     userButtonPopoverActionButton: "hover:bg-white/5 text-blue-100",
                                     userButtonPopoverActionButtonText: "text-blue-100",
