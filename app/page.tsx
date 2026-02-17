@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useUser } from '@clerk/nextjs';
 import Header from '../components/Header';
+import { HistoryEntry } from '../types';
 
 const MAX_COUNT = 108;
 
@@ -13,15 +14,18 @@ export default function Home() {
   const [totalCount, setTotalCount] = useState(0);
   const [isRoundComplete, setIsRoundComplete] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(0);
-  const [historyLog, setHistoryLog] = useState<any[]>([]);
+  const [historyLog, setHistoryLog] = useState<HistoryEntry[]>([]);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const sessionStartTimeRef = useRef<number | null>(null);
 
   // Sync with Cloud on Load
   useEffect(() => {
     if (isLoaded && isSignedIn && user) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const data = user.unsafeMetadata as any;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (data.savedTotalCount !== undefined) setTotalCount(data.savedTotalCount);
+
       if (data.savedRounds !== undefined) setRoundsCompleted(data.savedRounds);
     }
   }, [isLoaded, isSignedIn, user]);
@@ -51,17 +55,18 @@ export default function Home() {
   const countDisplayRef = useRef<HTMLDivElement>(null);
 
   // Initialize Audio
-  const initAudio = () => {
+  const initAudio = useCallback(() => {
     if (typeof window !== 'undefined' && !audioContextRef.current) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
       if (AudioContextClass) {
         audioContextRef.current = new AudioContextClass();
       }
     }
-  };
+  }, []);
 
   // Play Gentle Notification Sound
-  const playCompletionSound = () => {
+  const playCompletionSound = useCallback(() => {
     initAudio();
     const ac = audioContextRef.current;
     if (ac) {
@@ -86,14 +91,14 @@ export default function Home() {
       osc.start();
       osc.stop(ac.currentTime + 1.5);
     }
-  };
+  }, [initAudio]);
 
   // Vibrate Device
-  const vibrateDevice = () => {
+  const vibrateDevice = useCallback(() => {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       navigator.vibrate([200, 100, 200]);
     }
-  };
+  }, []);
 
   // Format Time
   const formatTime = (totalSeconds: number) => {
@@ -103,39 +108,60 @@ export default function Home() {
   };
 
   // Timer Logic
-  const startTimer = () => {
+  const startTimer = useCallback(() => {
     if (!isTimerRunning) {
       setIsTimerRunning(true);
       timerIntervalRef.current = setInterval(() => {
         setTimerSeconds(prev => prev + 1);
       }, 1000);
     }
-  };
+  }, [isTimerRunning]);
 
-  const pauseTimer = () => {
+  const pauseTimer = useCallback(() => {
     if (isTimerRunning) {
       if (timerIntervalRef.current) {
         clearInterval(timerIntervalRef.current);
       }
       setIsTimerRunning(false);
     }
-  };
+  }, [isTimerRunning]);
 
-  const resetTimer = () => {
+  const resetTimer = useCallback(() => {
     pauseTimer();
     setTimerSeconds(0);
-  };
+  }, [pauseTimer]);
 
-  const toggleTimer = () => {
+  const toggleTimer = useCallback(() => {
     if (isTimerRunning) {
       pauseTimer();
     } else {
       startTimer();
     }
-  };
+  }, [isTimerRunning, pauseTimer, startTimer]);
 
   // Increment Counter Logic
-  const incrementCount = () => {
+  const completeRound = useCallback(() => {
+    setRoundsCompleted(prev => prev + 1);
+
+    // Update Rounds in History
+    if (sessionStartTimeRef.current) {
+      setHistoryLog(prev => {
+        const index = prev.findIndex(item => item.id === sessionStartTimeRef.current);
+        if (index >= 0) {
+          const updated = [...prev];
+          updated[index] = { ...updated[index], rounds: updated[index].rounds + 1 };
+          return updated;
+        }
+        return prev;
+      });
+    }
+    setIsRoundComplete(true);
+    playCompletionSound();
+    vibrateDevice();
+  }, [playCompletionSound, vibrateDevice]); // playCompletionSound and vibrateDevice are effectively stable if defined outside or useCallback'd, but here they are stable-ish. Ideally wrap them too.
+
+  // Increment Counter Logic
+  const incrementCount = useCallback(() => {
     const isFreshStart = (timerSeconds === 0 && !isTimerRunning);
 
     if (isFreshStart) {
@@ -190,7 +216,7 @@ export default function Home() {
           return updated;
         } else {
           const now = new Date();
-          const newEntry = {
+          const newEntry: HistoryEntry = {
             id: sessionKey,
             date: now.toLocaleDateString(),
             day: now.toLocaleDateString('en-US', { weekday: 'long' }),
@@ -215,36 +241,16 @@ export default function Home() {
         completeRound();
       }
     }
-  };
+  }, [timerSeconds, isTimerRunning, startTimer, isRoundComplete, currentCount, completeRound, initAudio]);
 
-  const completeRound = () => {
-    setRoundsCompleted(prev => prev + 1);
-
-    // Update Rounds in History
-    if (sessionStartTimeRef.current) {
-      setHistoryLog(prev => {
-        const index = prev.findIndex(item => item.id === sessionStartTimeRef.current);
-        if (index >= 0) {
-          const updated = [...prev];
-          updated[index] = { ...updated[index], rounds: updated[index].rounds + 1 };
-          return updated;
-        }
-        return prev;
-      });
-    }
-    setIsRoundComplete(true);
-    playCompletionSound();
-    vibrateDevice();
-  };
-
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     if (confirm('Reset currrent round progress? This will reset your count to 0.')) {
       setCurrentCount(0);
       setIsRoundComplete(false);
       // We do NOT reset totalCount or roundsCompleted as those are lifetime stats
       resetTimer();
     }
-  };
+  }, [resetTimer]);
 
   // Keyboard Event Listener
   useEffect(() => {
@@ -275,7 +281,7 @@ export default function Home() {
 
     // We include all dependencies to re-bind when state changes. 
     // This is efficient enough for this app.
-  }, [isTimerRunning, totalCount, timerSeconds, currentCount, isRoundComplete]);
+  }, [isTimerRunning, totalCount, timerSeconds, currentCount, isRoundComplete, incrementCount, handleReset, toggleTimer]);
   // NOTE: This effect re-runs on every tick of timer if we include timerSeconds. 
   // timerSeconds is NOT used in incrementCount, so we can omit it if we check isTimerRunning (which is stable relative to timer ticks).
   // Wait, incrementCount USES timerSeconds for isFreshStart check.
