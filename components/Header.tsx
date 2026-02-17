@@ -86,19 +86,18 @@ export default function Header({ totalCount = 0, roundsCompleted = 0, historyLog
             {/* Right Side: Auth - Aligned with Sadhana Log */}
             <div className="absolute top-6 right-6 sm:top-8 sm:right-10 pointer-events-auto transition-all duration-500">
                 <SignedOut>
-                    <div className="flex items-center gap-1 bg-[#0f172a]/80 backdrop-blur-2xl border border-white/10 rounded-full shadow-[0_0_30px_rgba(0,0,0,0.5)] p-1.5 transition-all w-fit pointer-events-auto hover:bg-[#1e293b]/90 hover:border-white/20">
+                    <div className="flex items-center gap-6 pr-4">
                         <SignInButton mode="modal">
-                            <button className="cursor-pointer px-6 py-2.5 text-xs font-bold text-blue-100 transition-all hover:bg-white/10 rounded-full uppercase tracking-widest hover:text-white">
+                            <button className="cursor-pointer relative text-xs font-bold text-blue-200/70 hover:text-white uppercase tracking-widest transition-colors duration-300 group py-2">
                                 Sign In
+                                <span className="absolute bottom-1 left-0 w-full h-[2px] bg-blue-400 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ease-out origin-left"></span>
                             </button>
                         </SignInButton>
 
-                        {/* Vertical Separator */}
-                        <div className="w-px h-5 bg-white/20"></div>
-
                         <SignUpButton mode="modal">
-                            <button className="cursor-pointer px-6 py-2.5 text-xs font-bold text-blue-100 transition-all hover:bg-white/10 rounded-full uppercase tracking-widest hover:text-white">
+                            <button className="cursor-pointer relative text-xs font-bold text-blue-200/70 hover:text-white uppercase tracking-widest transition-colors duration-300 group py-2">
                                 Start Japa
+                                <span className="absolute bottom-1 left-0 w-full h-[2px] bg-blue-400 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ease-out origin-left"></span>
                             </button>
                         </SignUpButton>
                     </div>
