@@ -1,13 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import {
-    SignInButton,
-    SignUpButton,
-    SignedIn,
-    SignedOut,
-    UserButton
-} from '@clerk/nextjs';
 import { HistoryEntry } from '../types';
 
 interface HeaderProps {
@@ -83,46 +76,6 @@ export default function Header({ totalCount = 0, roundsCompleted = 0, historyLog
                 </div>
             </div>
 
-            {/* Right Side: Auth - Aligned with Sadhana Log */}
-            <div className="absolute top-6 right-6 sm:top-8 sm:right-10 pointer-events-auto transition-all duration-500">
-                <SignedOut>
-                    <div className="flex items-center gap-6 pr-4">
-                        <SignInButton mode="modal">
-                            <button className="cursor-pointer relative text-xs font-bold text-blue-200/70 hover:text-white uppercase tracking-widest transition-colors duration-300 group py-2">
-                                Sign In
-                                <span className="absolute bottom-1 left-0 w-full h-[2px] bg-blue-400 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ease-out origin-left"></span>
-                            </button>
-                        </SignInButton>
-
-                        <SignUpButton mode="modal">
-                            <button className="cursor-pointer relative text-xs font-bold text-blue-200/70 hover:text-white uppercase tracking-widest transition-colors duration-300 group py-2">
-                                Start Japa
-                                <span className="absolute bottom-1 left-0 w-full h-[2px] bg-blue-400 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ease-out origin-left"></span>
-                            </button>
-                        </SignUpButton>
-                    </div>
-                </SignedOut>
-
-                <SignedIn>
-                    <div className="flex items-center gap-4 bg-[#0a0e27]/60 px-4 pl-6 py-2 rounded-full border border-white/10 backdrop-blur-xl shadow-2xl">
-                        <div className="hidden sm:flex flex-col items-end mr-1">
-                            <span className="text-[10px] text-blue-300 uppercase tracking-wider">Welcome</span>
-                            <span className="text-xs font-semibold text-white">Devotee</span>
-                        </div>
-                        <UserButton
-                            appearance={{
-                                elements: {
-                                    userButtonAvatarBox: "w-8 h-8 ring-2 ring-white/10 hover:ring-white/30 transition-all",
-                                    userButtonPopoverCard: "bg-[#0f172a] border border-white/10 shadow-2xl backdrop-blur-xl",
-                                    userButtonPopoverActionButton: "hover:bg-white/5 text-blue-100",
-                                    userButtonPopoverActionButtonText: "text-blue-100",
-                                    userButtonPopoverFooter: "hidden"
-                                }
-                            }}
-                        />
-                    </div>
-                </SignedIn>
-            </div>
         </header>
     );
 }

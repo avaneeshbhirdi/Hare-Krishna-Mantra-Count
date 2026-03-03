@@ -1,14 +1,12 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useUser } from '@clerk/nextjs';
 import Header from '../components/Header';
 import { HistoryEntry } from '../types';
 
 const MAX_COUNT = 108;
 
 export default function Home() {
-  const { user, isLoaded, isSignedIn } = useUser();
   const [currentCount, setCurrentCount] = useState(0);
   const [roundsCompleted, setRoundsCompleted] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
@@ -18,35 +16,28 @@ export default function Home() {
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const sessionStartTimeRef = useRef<number | null>(null);
 
-  // Sync with Cloud on Load
+  // Sync with Local Storage on Load
   useEffect(() => {
-    if (isLoaded && isSignedIn && user) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const data = user.unsafeMetadata as any;
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      if (data.savedTotalCount !== undefined) setTotalCount(data.savedTotalCount);
+    const savedTotal = localStorage.getItem('savedTotalCount');
+    const savedRounds = localStorage.getItem('savedRounds');
+    const savedHistory = localStorage.getItem('historyLog');
 
-      if (data.savedRounds !== undefined) setRoundsCompleted(data.savedRounds);
+    if (savedTotal) setTotalCount(parseInt(savedTotal, 10));
+    if (savedRounds) setRoundsCompleted(parseInt(savedRounds, 10));
+    if (savedHistory) setHistoryLog(JSON.parse(savedHistory));
+  }, []);
+
+  // Auto-Save to Local Storage
+  useEffect(() => {
+    localStorage.setItem('savedTotalCount', totalCount.toString());
+    localStorage.setItem('savedRounds', roundsCompleted.toString());
+    // Using a simpler JSON stringify with try-catch to avoid potential cycling or errors
+    try {
+      localStorage.setItem('historyLog', JSON.stringify(historyLog));
+    } catch (err) {
+      console.error('Failed to save history log:', err);
     }
-  }, [isLoaded, isSignedIn, user]);
-
-  // Auto-Save to Cloud (Debounced)
-  useEffect(() => {
-    if (!isLoaded || !isSignedIn || !user) return;
-
-    const timeoutId = setTimeout(() => {
-      // Only save if data has changed
-      user.update({
-        unsafeMetadata: {
-          savedTotalCount: totalCount,
-          savedRounds: roundsCompleted,
-          historyLog: historyLog
-        }
-      }).catch(err => console.error("Failed to auto-save:", err));
-    }, 2000); // Save after 2 seconds of inactivity to prevent rate limits
-
-    return () => clearTimeout(timeoutId);
-  }, [totalCount, roundsCompleted, currentCount, isLoaded, isSignedIn, user, historyLog]);
+  }, [totalCount, roundsCompleted, historyLog]);
 
   // Refs for non-reactive state or imperative APIs
   const audioContextRef = useRef<AudioContext | null>(null);
