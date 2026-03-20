@@ -1,10 +1,20 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import Header from '../components/Header';
-import { HistoryEntry } from '../types';
+import { createClient } from '../utils/supabase/client';
+import { User } from '@supabase/supabase-js';
 
 const MAX_COUNT = 108;
+
+interface SadhanaLog {
+  id: string;
+  user_id: string;
+  date: string;
+  time: string;
+  counts: number;
+  rounds: number;
+  created_at?: string;
+}
 
 export default function Home() {
   const [currentCount, setCurrentCount] = useState(0);
@@ -12,38 +22,113 @@ export default function Home() {
   const [totalCount, setTotalCount] = useState(0);
   const [isRoundComplete, setIsRoundComplete] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(0);
-  const [historyLog, setHistoryLog] = useState<HistoryEntry[]>([]);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
-  const sessionStartTimeRef = useRef<number | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [logs, setLogs] = useState<SadhanaLog[]>([]);
+  const [lifetimeCounts, setLifetimeCounts] = useState(0);
+  const [lifetimeRounds, setLifetimeRounds] = useState(0);
+  const supabase = createClient();
 
-  // Sync with Local Storage on Load
   useEffect(() => {
-    const savedTotal = localStorage.getItem('savedTotalCount');
-    const savedRounds = localStorage.getItem('savedRounds');
-    const savedHistory = localStorage.getItem('historyLog');
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+    };
+    getUser();
 
-    if (savedTotal) setTotalCount(parseInt(savedTotal, 10));
-    if (savedRounds) setRoundsCompleted(parseInt(savedRounds, 10));
-    if (savedHistory) setHistoryLog(JSON.parse(savedHistory));
-  }, []);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
+    });
 
-  // Auto-Save to Local Storage
-  useEffect(() => {
-    localStorage.setItem('savedTotalCount', totalCount.toString());
-    localStorage.setItem('savedRounds', roundsCompleted.toString());
-    // Using a simpler JSON stringify with try-catch to avoid potential cycling or errors
-    try {
-      localStorage.setItem('historyLog', JSON.stringify(historyLog));
-    } catch (err) {
-      console.error('Failed to save history log:', err);
-    }
-  }, [totalCount, roundsCompleted, historyLog]);
+    return () => subscription.unsubscribe();
+  }, [supabase.auth]);
 
   // Refs for non-reactive state or imperative APIs
   const audioContextRef = useRef<AudioContext | null>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const counterCircleRef = useRef<HTMLDivElement>(null);
   const countDisplayRef = useRef<HTMLDivElement>(null);
+  const logSectionRef = useRef<HTMLDivElement>(null);
+
+  const fetchLogs = useCallback(async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('sadhana_logs')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error("Error fetching logs:", error);
+      } else if (data) {
+        setLogs(data as SadhanaLog[]);
+        let totalC = 0;
+        let totalR = 0;
+        data.forEach(log => {
+          totalC += log.counts || 0;
+          totalR += log.rounds || 0;
+        });
+        setLifetimeCounts(totalC);
+        setLifetimeRounds(totalR);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }, [user, supabase]);
+
+  useEffect(() => {
+    // Wrap in async IIFE or just call it since it is async naturally
+    // Linter is strict, so we schedule it:
+    if (user) {
+      void fetchLogs();
+    }
+  }, [fetchLogs, user]);
+
+  const scrollToLog = () => {
+    logSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const saveToLog = async () => {
+    if (!user) {
+      alert("Please log in to save your sadhana.");
+      return;
+    }
+    if (totalCount === 0 && roundsCompleted === 0) {
+      alert("No progress to save yet.");
+      return;
+    }
+
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    const timeStr = now.toTimeString().split(' ')[0];
+
+    // Assuming we save the current totalCount and roundsCompleted for this session
+    const { error } = await supabase
+      .from('sadhana_logs')
+      .insert([
+        {
+          user_id: user.id,
+          date: dateStr,
+          time: timeStr,
+          counts: totalCount,
+          rounds: roundsCompleted
+        }
+      ]);
+
+    if (error) {
+      console.error("Error saving log:", error);
+      alert("Failed to save log. Please ensure the 'sadhana_logs' table exists in Supabase.");
+    } else {
+      alert("Successfully saved to log!");
+      fetchLogs();
+      // Optional: reset session counters after save
+      setCurrentCount(0);
+      setTotalCount(0);
+      setRoundsCompleted(0);
+      resetTimer();
+    }
+  };
 
   // Initialize Audio
   const initAudio = useCallback(() => {
@@ -133,19 +218,6 @@ export default function Home() {
   // Increment Counter Logic
   const completeRound = useCallback(() => {
     setRoundsCompleted(prev => prev + 1);
-
-    // Update Rounds in History
-    if (sessionStartTimeRef.current) {
-      setHistoryLog(prev => {
-        const index = prev.findIndex(item => item.id === sessionStartTimeRef.current);
-        if (index >= 0) {
-          const updated = [...prev];
-          updated[index] = { ...updated[index], rounds: updated[index].rounds + 1 };
-          return updated;
-        }
-        return prev;
-      });
-    }
     setIsRoundComplete(true);
     playCompletionSound();
     vibrateDevice();
@@ -186,39 +258,6 @@ export default function Home() {
       const newCount = currentCount + 1;
       setCurrentCount(newCount);
       setTotalCount(prev => prev + 1);
-
-      // Session Tracking Logic
-      if (!sessionStartTimeRef.current) {
-        sessionStartTimeRef.current = Date.now();
-      }
-
-      const sessionKey = sessionStartTimeRef.current;
-
-      setHistoryLog(prev => {
-        const existingIndex = prev.findIndex(item => item.id === sessionKey);
-
-        if (existingIndex >= 0) {
-          const updated = [...prev];
-          updated[existingIndex] = {
-            ...updated[existingIndex],
-            counts: updated[existingIndex].counts + 1,
-            // rounds updated separately in completeRound
-          };
-          return updated;
-        } else {
-          const now = new Date();
-          const newEntry: HistoryEntry = {
-            id: sessionKey,
-            date: now.toLocaleDateString(),
-            day: now.toLocaleDateString('en-US', { weekday: 'long' }),
-            time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            timestamp: now.getTime(),
-            counts: 1,
-            rounds: 0
-          };
-          return [newEntry, ...prev].slice(0, 50);
-        }
-      });
 
       // Scale animation
       if (countDisplayRef.current) {
@@ -301,7 +340,30 @@ export default function Home() {
         <div className="nebula"></div>
       </div>
 
-      <Header totalCount={totalCount} roundsCompleted={roundsCompleted} historyLog={historyLog} />
+      <div className="absolute top-6 right-6 sm:top-8 sm:right-10 pointer-events-auto z-50 transition-all duration-500">
+        {user ? (
+          <div className="flex flex-col sm:flex-row items-center gap-4">
+            <button onClick={scrollToLog} className="relative px-6 py-2.5 text-xs font-bold text-white uppercase tracking-widest transition-all duration-300 group border border-purple-400/50 rounded-full bg-purple-600/60 hover:bg-purple-600/80 backdrop-blur-xl shadow-2xl cursor-pointer">
+              Sadhana Log
+            </button>
+            <div className="flex items-center gap-4 bg-[#0a0e27]/60 px-4 py-2 rounded-full border border-white/10 backdrop-blur-xl shadow-2xl">
+              <span className="text-[10px] text-blue-300 uppercase tracking-wider hidden sm:block">Welcome</span>
+              <span className="text-xs font-semibold text-white">{user.email}</span>
+              <div className="w-px h-4 bg-white/20 mx-1"></div>
+              <button onClick={() => supabase.auth.signOut()} className="text-[10px] text-red-300 hover:text-red-100 uppercase tracking-wider font-bold">Sign Out</button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex gap-3">
+            <a href="/login" className="cursor-pointer relative px-6 py-2.5 text-xs font-bold text-blue-100 hover:text-white uppercase tracking-widest transition-all duration-300 group border border-white/20 rounded-full bg-[#0a0e27]/40 hover:bg-[#1a237e]/60 backdrop-blur-xl shadow-2xl">
+              Log In
+            </a>
+            <a href="/login" className="cursor-pointer relative px-6 py-2.5 text-xs font-bold text-white hover:text-blue-100 uppercase tracking-widest transition-all duration-300 group border border-blue-400/50 rounded-full bg-blue-600/60 hover:bg-blue-600/80 backdrop-blur-xl shadow-2xl">
+              Sign Up
+            </a>
+          </div>
+        )}
+      </div>
 
       {/* Main Game Area - Centered Block */}
       <div className="flex flex-col items-center justify-center w-full max-w-4xl z-10 gap-6 transition-all duration-500">
@@ -376,9 +438,75 @@ export default function Home() {
             >
               <div className="reset-label">RESET</div>
             </button>
+
+            {user && (
+              <button
+                className="ml-2 cursor-pointer relative px-4 py-2 text-[10px] font-bold text-emerald-100 hover:text-white uppercase tracking-widest transition-all duration-300 border border-emerald-400/50 rounded-full bg-emerald-600/40 hover:bg-emerald-600/80 backdrop-blur-xl shadow-lg"
+                onClick={saveToLog}
+                title="Save session progress to Sadhana Log"
+              >
+                SAVE LOG
+              </button>
+            )}
           </div>
         </div>
       </div>
+
+      {/* --- SADHANA LOG SECTION --- */}
+      {user && (
+        <div ref={logSectionRef} className="w-full max-w-4xl z-10 flex flex-col gap-6 transition-all duration-500 mt-20 pb-24">
+          
+          <div className="dashboard glass-panel w-full !rounded-3xl !flex-col md:!flex-row !justify-between">
+            <div className="dashboard-section w-full md:w-auto">
+              <div className="dashboard-card-small !items-start">
+                <div className="card-label">Lifetime Focus</div>
+                <div className="text-sm text-gray-400 mt-1">Consistency is key</div>
+              </div>
+            </div>
+            <div className="vertical-separator hidden md:block"></div>
+            <div className="dashboard-section w-full md:w-auto justify-around flex-1">
+              <div className="dashboard-card-small">
+                <div className="card-label">Lifetime Total Counts</div>
+                <div className="card-value-small !text-purple-300">{lifetimeCounts}</div>
+              </div>
+              <div className="dashboard-card-small">
+                <div className="card-label">Lifetime Total Rounds</div>
+                <div className="card-value-small !text-emerald-300">{lifetimeRounds}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="glass w-full rounded-3xl p-6 shadow-2xl overflow-hidden border border-white/10">
+            <h2 className="text-2xl font-['Cinzel'] text-white mb-6 border-b border-white/10 pb-4">My Sadhana History</h2>
+            {logs.length === 0 ? (
+              <div className="text-gray-400 text-center py-8">No sadhana logs found. Start chanting and save your progress!</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-white/10 text-xs uppercase tracking-wider text-blue-300/80">
+                      <th className="p-4 font-semibold">Date</th>
+                      <th className="p-4 font-semibold">Time</th>
+                      <th className="p-4 font-semibold">Total Counts</th>
+                      <th className="p-4 font-semibold">Total Rounds</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {logs.map((log) => (
+                      <tr key={log.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                        <td className="p-4 text-gray-200">{log.date}</td>
+                        <td className="p-4 text-gray-400 text-sm">{log.time}</td>
+                        <td className="p-4 text-purple-200 font-bold">{log.counts}</td>
+                        <td className="p-4 text-emerald-200 font-bold">{log.rounds}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
 
 
