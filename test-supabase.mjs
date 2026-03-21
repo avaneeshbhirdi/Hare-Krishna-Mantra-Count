@@ -1,3 +1,4 @@
+/* eslint-disable */
 const { createClient } = require('@supabase/supabase-js');
 const dotenv = require('dotenv');
 
@@ -23,7 +24,7 @@ async function testConnection() {
         console.log("Connecting to Supabase at:", supabaseUrl);
 
         // Instead of querying a non-existent table, we can just call a harmless method
-        const { data: { session }, error: authError } = await supabase.auth.getSession();
+        await supabase.auth.getSession();
 
         // Auth getSession doesn't make a network call if it's purely checking local storage,
         // but we have no session. We need a network call.

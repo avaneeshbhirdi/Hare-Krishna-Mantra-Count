@@ -64,13 +64,11 @@ export default function Home() {
       } else if (data) {
         setLogs(data as SadhanaLog[]);
         let totalC = 0;
-        let totalR = 0;
         data.forEach(log => {
           totalC += log.counts || 0;
-          totalR += log.rounds || 0;
         });
         setLifetimeCounts(totalC);
-        setLifetimeRounds(totalR);
+        setLifetimeRounds(Math.floor(totalC / 108));
       }
     } catch (err) {
       console.error(err);
@@ -81,6 +79,7 @@ export default function Home() {
     // Wrap in async IIFE or just call it since it is async naturally
     // Linter is strict, so we schedule it:
     if (user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       void fetchLogs();
     }
   }, [fetchLogs, user]);
@@ -488,18 +487,41 @@ export default function Home() {
                       <th className="p-4 font-semibold">Date</th>
                       <th className="p-4 font-semibold">Time</th>
                       <th className="p-4 font-semibold">Total Counts</th>
-                      <th className="p-4 font-semibold">Total Rounds</th>
+                      <th className="p-4 font-semibold">Session Breakdown</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {logs.map((log) => (
-                      <tr key={log.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                        <td className="p-4 text-gray-200">{log.date}</td>
-                        <td className="p-4 text-gray-400 text-sm">{log.time}</td>
-                        <td className="p-4 text-purple-200 font-bold">{log.counts}</td>
-                        <td className="p-4 text-emerald-200 font-bold">{log.rounds}</td>
-                      </tr>
-                    ))}
+                    {logs.map((log) => {
+                      let dateStr = log.date;
+                      let timeStr = log.time;
+                      try {
+                        const rowDate = log.created_at ? new Date(log.created_at) : new Date(`${log.date}T${log.time}`);
+                        if (!isNaN(rowDate.getTime())) {
+                          dateStr = new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' }).format(rowDate);
+                          timeStr = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }).format(rowDate);
+                        }
+                      } catch (e) {
+                         // fallback to raw strings on error
+                      }
+                      
+                      const reqCounts = log.counts || 0;
+                      const sessionRounds = Math.floor(reqCounts / 108);
+                      const sessionCounts = reqCounts % 108;
+                      let breakdownStr = "";
+                      
+                      if (sessionRounds > 0 && sessionCounts > 0) breakdownStr = `${sessionRounds} R, ${sessionCounts} C`;
+                      else if (sessionRounds > 0) breakdownStr = `${sessionRounds} R`;
+                      else breakdownStr = `${sessionCounts} C`;
+
+                      return (
+                        <tr key={log.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                          <td className="p-4 text-gray-200">{dateStr}</td>
+                          <td className="p-4 text-gray-400 text-sm">{timeStr}</td>
+                          <td className="p-4 text-purple-200 font-bold">{reqCounts}</td>
+                          <td className="p-4 text-emerald-200 font-bold">{breakdownStr}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
