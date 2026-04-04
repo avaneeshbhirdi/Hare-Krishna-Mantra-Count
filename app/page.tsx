@@ -13,6 +13,7 @@ interface SadhanaLog {
   time: string;
   counts: number;
   rounds: number;
+  duration_seconds?: number;
   created_at?: string;
 }
 
@@ -27,6 +28,8 @@ export default function Home() {
   const [logs, setLogs] = useState<SadhanaLog[]>([]);
   const [lifetimeCounts, setLifetimeCounts] = useState(0);
   const [lifetimeRounds, setLifetimeRounds] = useState(0);
+  const [isLogOpen, setIsLogOpen] = useState(false);
+  const [currentLogId, setCurrentLogId] = useState<string | null>(null);
   const supabase = createClient();
 
   useEffect(() => {
@@ -49,6 +52,11 @@ export default function Home() {
   const counterCircleRef = useRef<HTMLDivElement>(null);
   const countDisplayRef = useRef<HTMLDivElement>(null);
   const logSectionRef = useRef<HTMLDivElement>(null);
+  
+  const currentTimerRef = useRef(timerSeconds);
+  useEffect(() => {
+    currentTimerRef.current = timerSeconds;
+  }, [timerSeconds]);
 
   const fetchLogs = useCallback(async () => {
     if (!user) return;
@@ -88,46 +96,61 @@ export default function Home() {
     logSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const saveToLog = async () => {
-    if (!user) {
-      alert("Please log in to save your sadhana.");
-      return;
-    }
-    if (totalCount === 0 && roundsCompleted === 0) {
-      alert("No progress to save yet.");
-      return;
-    }
+  const saveToLog = useCallback(async () => {
+    if (!user) return;
+    if (totalCount === 0 && roundsCompleted === 0) return;
 
     const now = new Date();
     const dateStr = now.toISOString().split('T')[0];
     const timeStr = now.toTimeString().split(' ')[0];
 
-    // Assuming we save the current totalCount and roundsCompleted for this session
-    const { error } = await supabase
-      .from('sadhana_logs')
-      .insert([
-        {
+    if (currentLogId) {
+      const { error } = await supabase
+        .from('sadhana_logs')
+        .update({
+          counts: totalCount,
+          rounds: roundsCompleted,
+          duration_seconds: currentTimerRef.current
+        })
+        .eq('id', currentLogId);
+      
+      if (error) {
+        console.error("Error updating log:", error);
+      } else {
+        await fetchLogs();
+      }
+    } else {
+      const { data, error } = await supabase
+        .from('sadhana_logs')
+        .insert([{
           user_id: user.id,
           date: dateStr,
           time: timeStr,
           counts: totalCount,
-          rounds: roundsCompleted
-        }
-      ]);
+          rounds: roundsCompleted,
+          duration_seconds: currentTimerRef.current
+        }])
+        .select();
 
-    if (error) {
-      console.error("Error saving log:", error);
-      alert("Failed to save log. Please ensure the 'sadhana_logs' table exists in Supabase.");
-    } else {
-      alert("Successfully saved to log!");
-      fetchLogs();
-      // Optional: reset session counters after save
-      setCurrentCount(0);
-      setTotalCount(0);
-      setRoundsCompleted(0);
-      resetTimer();
+      if (error) {
+        console.error("Error inserting log:", error);
+      } else if (data && data[0]) {
+        setCurrentLogId(data[0].id);
+        await fetchLogs();
+      }
     }
-  };
+  }, [user, totalCount, roundsCompleted, currentLogId, supabase, fetchLogs]);
+
+  // Auto-Save Effect
+  useEffect(() => {
+    if (totalCount === 0 && roundsCompleted === 0) return;
+
+    const timeoutId = setTimeout(() => {
+      saveToLog();
+    }, 2000);
+
+    return () => clearTimeout(timeoutId);
+  }, [totalCount, roundsCompleted, saveToLog]);
 
   // Initialize Audio
   const initAudio = useCallback(() => {
@@ -339,12 +362,17 @@ export default function Home() {
         <div className="nebula"></div>
       </div>
 
+      {user && (
+        <div className="absolute top-6 left-6 sm:top-8 sm:left-10 pointer-events-auto z-50">
+          <button onClick={() => setIsLogOpen(prev => !prev)} className="relative px-6 py-2.5 text-xs font-bold text-white uppercase tracking-widest transition-all duration-300 group border border-purple-400/50 rounded-full bg-purple-600/60 hover:bg-purple-600/80 backdrop-blur-xl shadow-2xl cursor-pointer">
+            {isLogOpen ? 'Close Log' : 'Sadhana Log'}
+          </button>
+        </div>
+      )}
+
       <div className="absolute top-6 right-6 sm:top-8 sm:right-10 pointer-events-auto z-50 transition-all duration-500">
         {user ? (
           <div className="flex flex-col sm:flex-row items-center gap-4">
-            <button onClick={scrollToLog} className="relative px-6 py-2.5 text-xs font-bold text-white uppercase tracking-widest transition-all duration-300 group border border-purple-400/50 rounded-full bg-purple-600/60 hover:bg-purple-600/80 backdrop-blur-xl shadow-2xl cursor-pointer">
-              Sadhana Log
-            </button>
             <div className="flex items-center gap-4 bg-[#0a0e27]/60 px-4 py-2 rounded-full border border-white/10 backdrop-blur-xl shadow-2xl">
               <span className="text-[10px] text-blue-300 uppercase tracking-wider hidden sm:block">Welcome</span>
               <span className="text-xs font-semibold text-white">{user.email}</span>
@@ -437,41 +465,23 @@ export default function Home() {
             >
               <div className="reset-label">RESET</div>
             </button>
-
-            {user && (
-              <button
-                className="ml-2 cursor-pointer relative px-4 py-2 text-[10px] font-bold text-emerald-100 hover:text-white uppercase tracking-widest transition-all duration-300 border border-emerald-400/50 rounded-full bg-emerald-600/40 hover:bg-emerald-600/80 backdrop-blur-xl shadow-lg"
-                onClick={saveToLog}
-                title="Save session progress to Sadhana Log"
-              >
-                SAVE LOG
-              </button>
-            )}
           </div>
         </div>
       </div>
 
       {/* --- SADHANA LOG SECTION --- */}
       {user && (
-        <div ref={logSectionRef} className="w-full max-w-4xl z-10 flex flex-col gap-6 transition-all duration-500 mt-20 pb-24">
+        <div ref={logSectionRef} className={`absolute top-20 left-6 sm:top-22 sm:left-10 w-[95vw] max-w-xl z-40 flex flex-col gap-6 transition-all duration-500 max-h-[75vh] overflow-y-auto custom-scrollbar pb-8 rounded-3xl ${isLogOpen ? 'opacity-100 translate-y-0 visible shadow-[0_0_50px_rgba(30,10,60,0.8)]' : 'opacity-0 -translate-y-4 invisible pointer-events-none'}`}>
           
-          <div className="dashboard glass-panel w-full !rounded-3xl !flex-col md:!flex-row !justify-between">
-            <div className="dashboard-section w-full md:w-auto">
-              <div className="dashboard-card-small !items-start">
-                <div className="card-label">Lifetime Focus</div>
-                <div className="text-sm text-gray-400 mt-1">Consistency is key</div>
-              </div>
+          <div className="dashboard glass-panel w-full !rounded-3xl flex flex-row justify-around items-center !p-4">
+            <div className="dashboard-card-small !m-0 !bg-transparent !border-0 !shadow-none">
+              <div className="card-label">Lifetime Total Counts</div>
+              <div className="card-value-small !text-purple-300">{lifetimeCounts}</div>
             </div>
-            <div className="vertical-separator hidden md:block"></div>
-            <div className="dashboard-section w-full md:w-auto justify-around flex-1">
-              <div className="dashboard-card-small">
-                <div className="card-label">Lifetime Total Counts</div>
-                <div className="card-value-small !text-purple-300">{lifetimeCounts}</div>
-              </div>
-              <div className="dashboard-card-small">
-                <div className="card-label">Lifetime Total Rounds</div>
-                <div className="card-value-small !text-emerald-300">{lifetimeRounds}</div>
-              </div>
+            <div className="w-px h-12 bg-white/10 mx-2 hidden md:block"></div>
+            <div className="dashboard-card-small !m-0 !bg-transparent !border-0 !shadow-none">
+              <div className="card-label">Lifetime Total Rounds</div>
+              <div className="card-value-small !text-emerald-300">{lifetimeRounds}</div>
             </div>
           </div>
 
@@ -488,6 +498,7 @@ export default function Home() {
                       <th className="p-4 font-semibold">Time</th>
                       <th className="p-4 font-semibold">Total Counts</th>
                       <th className="p-4 font-semibold">Session Breakdown</th>
+                      <th className="p-4 font-semibold">Duration</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -513,12 +524,21 @@ export default function Home() {
                       else if (sessionRounds > 0) breakdownStr = `${sessionRounds} R`;
                       else breakdownStr = `${sessionCounts} C`;
 
+                      let durationStr = "-";
+                      if (log.duration_seconds !== undefined && log.duration_seconds !== null) {
+                        const m = Math.floor(log.duration_seconds / 60);
+                        const s = log.duration_seconds % 60;
+                        if (m > 0) durationStr = `${m}m ${s}s`;
+                        else durationStr = `${s}s`;
+                      }
+
                       return (
                         <tr key={log.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
                           <td className="p-4 text-gray-200">{dateStr}</td>
                           <td className="p-4 text-gray-400 text-sm">{timeStr}</td>
                           <td className="p-4 text-purple-200 font-bold">{reqCounts}</td>
                           <td className="p-4 text-emerald-200 font-bold">{breakdownStr}</td>
+                          <td className="p-4 text-blue-200 font-bold">{durationStr}</td>
                         </tr>
                       );
                     })}
