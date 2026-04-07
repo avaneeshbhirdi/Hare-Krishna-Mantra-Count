@@ -36,7 +36,7 @@ export async function signInWithGoogle() {
     const supabase = await createClient();
     
     // Build robust redirect URL taking Vercel into account
-    let origin = process?.env?.NEXT_PUBLIC_SITE_URL ?? process?.env?.NEXT_PUBLIC_VERCEL_URL ?? 'http://localhost:3000';
+    let origin = process?.env?.NEXT_PUBLIC_SITE_URL ?? process?.env?.VERCEL_URL ?? 'http://localhost:3000';
     origin = origin.startsWith('http') ? origin : `https://${origin}`;
     origin = origin.endsWith('/') ? origin.slice(0, -1) : origin;
 

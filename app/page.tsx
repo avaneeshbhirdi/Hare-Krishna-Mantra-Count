@@ -36,6 +36,8 @@ export default function Home() {
   const [editAvatarPreview, setEditAvatarPreview] = useState<string | null>(null);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [currentLogId, setCurrentLogId] = useState<string | null>(null);
+  const [selectedLogs, setSelectedLogs] = useState<string[]>([]);
+  const [isDeletingLogs, setIsDeletingLogs] = useState(false);
   const supabase = createClient();
 
   useEffect(() => {
@@ -84,6 +86,7 @@ export default function Home() {
         });
         setLifetimeCounts(totalC);
         setLifetimeRounds(Math.floor(totalC / 108));
+        setSelectedLogs(prev => prev.filter(id => data.some(log => log.id === id))); // clean up deleted
       }
     } catch (err) {
       console.error(err);
@@ -142,6 +145,32 @@ export default function Home() {
       setEditAvatarFile(null);
       setEditAvatarPreview(null);
     }
+  };
+
+  const handleDeleteLogs = async () => {
+    if (selectedLogs.length === 0) return;
+    if (!confirm('Are you sure you want to delete the selected logs? This will permanently remove them and update your lifetime stats.')) return;
+    setIsDeletingLogs(true);
+    try {
+      const { error } = await supabase
+        .from('sadhana_logs')
+        .delete()
+        .in('id', selectedLogs);
+      
+      if (error) throw error;
+      
+      setSelectedLogs([]);
+      await fetchLogs();
+    } catch (e) {
+      console.error(e);
+      alert("Error deleting logs.");
+    } finally {
+      setIsDeletingLogs(false);
+    }
+  };
+
+  const toggleLogSelection = (id: string) => {
+    setSelectedLogs(prev => prev.includes(id) ? prev.filter(logId => logId !== id) : [...prev, id]);
   };
 
   const saveToLog = useCallback(async () => {
@@ -577,21 +606,19 @@ export default function Home() {
       </div>
 
       {/* Main Game Area - Centered Block */}
-      <div className="flex flex-col items-center justify-center w-full max-w-4xl z-10 gap-6 transition-all duration-500">
+      <div className="flex flex-col items-center justify-center w-full max-w-4xl z-10 gap-4 sm:gap-6 transition-all duration-500 mt-16 sm:mt-0 h-full max-h-screen pb-4">
 
-
-
-        <div className="flex flex-col gap-4 w-fit">
+        <div className="flex flex-col gap-3 w-full sm:w-fit px-4 order-1">
           {/* Mantra Header */}
-          <div className="mantra-panel">
+          <div className="mantra-panel hidden sm:block">
             <div className="mantra-text invocation">
               jaya sri-krishna-chaitanya prabhu nityananda<br />
               sri-adwaita gadadhara srivasadi-gaura-bhakta-vrinda
             </div>
           </div>
 
-          <div className="mantra-panel maha-mantra">
-            <div className="mantra-text">
+          <div className="mantra-panel maha-mantra py-4 sm:py-8 px-2 sm:px-16 w-full">
+            <div className="mantra-text text-sm sm:text-lg">
               Hare Krishna, Hare Krishna,<br />
               Krishna Krishna, Hare Hare<br />
               Hare Rama, Hare Rama,<br />
@@ -600,22 +627,9 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Central Japa Counter */}
-        <div className="counter-container">
-          <div
-            className="counter-circle glass"
-            ref={counterCircleRef}
-            style={circleStyle}
-            onClick={incrementCount}
-          >
-            <div className="count-display" ref={countDisplayRef}>{currentCount}</div>
-            <div className="space-hint">Press SPACE</div>
-          </div>
-        </div>
-
-        {/* Dashboard Cards */}
-        <div className="dashboard glass-panel">
-          <div className="dashboard-section left">
+        {/* Dashboard Cards placed above counter on mobile */}
+        <div className="dashboard glass-panel order-2 w-[90%] sm:w-auto">
+          <div className="dashboard-section left justify-between sm:justify-start w-full sm:w-auto">
             <div className="dashboard-card-timer">
               <div className="timer-display-small">{formatTime(timerSeconds)}</div>
               <div className="timer-mini-controls">
@@ -629,21 +643,21 @@ export default function Home() {
             </div>
 
             <div className="dashboard-card-small">
-              <div className="card-label">Total Count</div>
+              <div className="card-label !text-[10px] sm:!text-xs">Total</div>
               <div className="card-value-small">{totalCount}</div>
+            </div>
+            
+            <div className="dashboard-card-small">
+              <div className="card-label !text-[10px] sm:!text-xs">Rounds</div>
+              <div className="card-value-small">{roundsCompleted}</div>
             </div>
           </div>
 
-          <div className="vertical-separator"></div>
+          <div className="vertical-separator hidden sm:block"></div>
 
-          <div className="dashboard-section right">
-            <div className="dashboard-card-small">
-              <div className="card-label">Rounds</div>
-              <div className="card-value-small">{roundsCompleted}</div>
-            </div>
-
+          <div className="dashboard-section right justify-center sm:justify-start mt-2 sm:mt-0 w-full sm:w-auto">
             <button
-              className="dashboard-card-reset"
+              className="dashboard-card-reset mx-auto sm:mx-0"
               onClick={handleReset}
               title="Reset All Counts"
             >
@@ -651,21 +665,54 @@ export default function Home() {
             </button>
           </div>
         </div>
+
+        {/* Central Japa Counter - moved to bottom on mobile */}
+        <div className="counter-container order-3 mt-auto sm:mt-0 mb-4 sm:mb-0">
+          <div
+            className="counter-circle glass"
+            ref={counterCircleRef}
+            style={circleStyle}
+            onClick={incrementCount}
+            onPointerDown={(e) => {
+              if (e.pointerType === 'touch') {
+                incrementCount(); // more responsive on mobile
+                e.preventDefault();
+              }
+            }}
+          >
+            <div className="count-display" ref={countDisplayRef}>{currentCount}</div>
+            <div className="space-hint hidden sm:block">Press SPACE</div>
+            <div className="space-hint sm:hidden">TAP TO CHANT</div>
+          </div>
+        </div>
+
       </div>
 
       {/* --- SADHANA LOG SECTION --- */}
       {user && (
-        <div ref={logSectionRef} className={`absolute top-20 left-6 sm:top-22 sm:left-10 w-[95vw] max-w-xl z-40 flex flex-col gap-6 transition-all duration-500 max-h-[75vh] overflow-y-auto custom-scrollbar pb-8 rounded-3xl ${isLogOpen ? 'opacity-100 translate-y-0 visible shadow-[0_0_50px_rgba(30,10,60,0.8)]' : 'opacity-0 -translate-y-4 invisible pointer-events-none'}`}>
+        <div ref={logSectionRef} className={`absolute top-20 left-6 sm:top-22 sm:left-10 w-[95vw] max-w-2xl z-40 flex flex-col gap-6 transition-all duration-500 max-h-[75vh] overflow-y-auto custom-scrollbar pb-8 rounded-3xl ${isLogOpen ? 'opacity-100 translate-y-0 visible shadow-[0_0_50px_rgba(30,10,60,0.8)]' : 'opacity-0 -translate-y-4 invisible pointer-events-none'}`}>
           
-          <div className="dashboard glass-panel w-full !rounded-3xl flex flex-row justify-around items-center !p-4">
-            <div className="dashboard-card-small !m-0 !bg-transparent !border-0 !shadow-none">
+          <div className="dashboard glass-panel w-full !rounded-3xl flex flex-row flex-wrap sm:flex-nowrap justify-around items-center gap-4 !p-4 border border-white/10 relative">
+            <div className="dashboard-card-small !m-0 !bg-transparent !border-0 !shadow-none flex-1 text-center">
               <div className="card-label">Lifetime Total Counts</div>
               <div className="card-value-small !text-purple-300">{lifetimeCounts}</div>
             </div>
-            <div className="w-px h-12 bg-white/10 mx-2 hidden md:block"></div>
-            <div className="dashboard-card-small !m-0 !bg-transparent !border-0 !shadow-none">
+            <div className="w-px h-12 bg-white/10 hidden sm:block"></div>
+            <div className="dashboard-card-small !m-0 !bg-transparent !border-0 !shadow-none flex-1 text-center">
               <div className="card-label">Lifetime Total Rounds</div>
               <div className="card-value-small !text-emerald-300">{lifetimeRounds}</div>
+            </div>
+            <div className="w-px h-12 bg-white/10 hidden sm:block"></div>
+            <div className="flex-1 flex justify-center w-full sm:w-auto mt-2 sm:mt-0">
+               <button 
+                 onClick={handleDeleteLogs} 
+                 disabled={isDeletingLogs || selectedLogs.length === 0} 
+                 className={`w-full sm:w-auto flex justify-center items-center gap-2 px-5 py-2.5 rounded-xl border transition-all font-bold text-xs uppercase tracking-wider ${selectedLogs.length > 0 ? 'bg-red-500/20 hover:bg-red-500/40 text-red-300 border-red-500/30 shadow-lg' : 'bg-white/5 text-gray-500 border-white/10'}`}
+                 title={selectedLogs.length === 0 ? "Select logs to delete" : "Delete selected"}
+               >
+                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                 Delete {selectedLogs.length > 0 && `(${selectedLogs.length})`}
+               </button>
             </div>
           </div>
 
@@ -678,6 +725,15 @@ export default function Home() {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b border-white/10 text-xs uppercase tracking-wider text-blue-300/80">
+                      <th className="p-4 font-semibold w-12 text-center">
+                        <input 
+                          type="checkbox" 
+                          aria-label="Select all logs"
+                          onChange={(e) => e.target.checked ? setSelectedLogs(logs.map(l => l.id)) : setSelectedLogs([])} 
+                          checked={selectedLogs.length === logs.length && logs.length > 0} 
+                          className="w-4 h-4 rounded border-white/30 bg-black/40 text-purple-600 focus:ring-purple-500/50 cursor-pointer accent-purple-500 shadow-sm transition-all" 
+                        />
+                      </th>
                       <th className="p-4 font-semibold">Date</th>
                       <th className="p-4 font-semibold">Time</th>
                       <th className="p-4 font-semibold">Total Counts</th>
@@ -717,7 +773,16 @@ export default function Home() {
                       }
 
                       return (
-                        <tr key={log.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                        <tr key={log.id} className={`border-b border-white/5 transition-colors ${selectedLogs.includes(log.id) ? 'bg-purple-900/20 hover:bg-purple-900/30' : 'hover:bg-white/5'}`}>
+                          <td className="p-4 text-center">
+                            <input 
+                              type="checkbox" 
+                              aria-label="Select log"
+                              onChange={() => toggleLogSelection(log.id)} 
+                              checked={selectedLogs.includes(log.id)} 
+                              className="w-4 h-4 rounded border-white/30 bg-black/40 text-purple-600 focus:ring-purple-500/50 cursor-pointer accent-purple-500 shadow-sm transition-all" 
+                            />
+                          </td>
                           <td className="p-4 text-gray-200">{dateStr}</td>
                           <td className="p-4 text-gray-400 text-sm">{timeStr}</td>
                           <td className="p-4 text-purple-200 font-bold">{reqCounts}</td>
