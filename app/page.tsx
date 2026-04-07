@@ -29,6 +29,12 @@ export default function Home() {
   const [lifetimeCounts, setLifetimeCounts] = useState(0);
   const [lifetimeRounds, setLifetimeRounds] = useState(0);
   const [isLogOpen, setIsLogOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editAvatarFile, setEditAvatarFile] = useState<File | null>(null);
+  const [editAvatarPreview, setEditAvatarPreview] = useState<string | null>(null);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [currentLogId, setCurrentLogId] = useState<string | null>(null);
   const supabase = createClient();
 
@@ -52,6 +58,7 @@ export default function Home() {
   const counterCircleRef = useRef<HTMLDivElement>(null);
   const countDisplayRef = useRef<HTMLDivElement>(null);
   const logSectionRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const currentTimerRef = useRef(timerSeconds);
   useEffect(() => {
@@ -94,6 +101,47 @@ export default function Home() {
 
   const scrollToLog = () => {
     logSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleSaveProfile = async () => {
+    if (!user) return;
+    setIsSavingProfile(true);
+    try {
+      let avatarUrl = user.user_metadata?.avatar_url;
+      if (editAvatarFile) {
+        const fileExt = editAvatarFile.name.split('.').pop();
+        const fileName = `${user.id}-${Math.random()}.${fileExt}`;
+        const { error: uploadError, data } = await supabase.storage
+          .from('avatars')
+          .upload(fileName, editAvatarFile, { upsert: true });
+
+        if (uploadError) throw uploadError;
+
+        if (data) {
+          const { data: publicUrlData } = supabase.storage
+            .from('avatars')
+            .getPublicUrl(fileName);
+          avatarUrl = publicUrlData.publicUrl;
+        }
+      }
+
+      const { error } = await supabase.auth.updateUser({
+        data: {
+          full_name: editName,
+          avatar_url: avatarUrl
+        }
+      });
+      if (error) throw error;
+      
+      setIsEditingProfile(false);
+    } catch (e) {
+      console.error(e);
+      alert("Error saving profile.");
+    } finally {
+      setIsSavingProfile(false);
+      setEditAvatarFile(null);
+      setEditAvatarPreview(null);
+    }
   };
 
   const saveToLog = useCallback(async () => {
@@ -370,14 +418,150 @@ export default function Home() {
         </div>
       )}
 
-      <div className="absolute top-6 right-6 sm:top-8 sm:right-10 pointer-events-auto z-50 transition-all duration-500">
+      <div className="absolute top-6 right-6 sm:top-8 sm:right-10 pointer-events-auto z-50 transition-all duration-500 flex flex-col items-end">
         {user ? (
-          <div className="flex flex-col sm:flex-row items-center gap-4">
-            <div className="flex items-center gap-4 bg-[#0a0e27]/60 px-4 py-2 rounded-full border border-white/10 backdrop-blur-xl shadow-2xl">
-              <span className="text-[10px] text-blue-300 uppercase tracking-wider hidden sm:block">Welcome</span>
-              <span className="text-xs font-semibold text-white">{user.email}</span>
-              <div className="w-px h-4 bg-white/20 mx-1"></div>
-              <button onClick={() => supabase.auth.signOut()} className="text-[10px] text-red-300 hover:text-red-100 uppercase tracking-wider font-bold">Sign Out</button>
+          <div className="relative">
+            <button 
+              onClick={() => setIsProfileOpen(!isProfileOpen)}
+              className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-xl border-2 border-white/20 shadow-lg hover:scale-105 transition-transform overflow-hidden relative object-cover"
+            >
+              {user.user_metadata?.avatar_url ? (
+                <img src={user.user_metadata.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-tr from-purple-600 to-blue-500 flex items-center justify-center">
+                  {user.email ? user.email.charAt(0).toUpperCase() : 'U'}
+                </div>
+              )}
+            </button>
+            
+            {/* Profile Dropdown */}
+            <div className={`absolute right-0 top-16 w-72 bg-[#0a0e27]/90 backdrop-blur-2xl border border-white/10 rounded-3xl shadow-2xl transition-all duration-300 origin-top-right overflow-hidden ${isProfileOpen ? 'scale-100 opacity-100 visible' : 'scale-95 opacity-0 invisible pointer-events-none'}`}>
+              <div className="p-5 flex flex-col gap-4">
+                {isEditingProfile ? (
+                  <div className="flex flex-col gap-4">
+                    <div className="flex flex-col items-center gap-3 border-b border-white/10 pb-4">
+                      <div 
+                        className="w-16 h-16 rounded-full overflow-hidden border-2 border-white/20 relative cursor-pointer group flex-shrink-0"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        {editAvatarPreview ? (
+                          <img src={editAvatarPreview} alt="Preview" className="w-full h-full object-cover" />
+                        ) : user.user_metadata?.avatar_url ? (
+                          <img src={user.user_metadata.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-tr from-purple-600 to-blue-500 flex items-center justify-center text-white font-bold text-2xl">
+                            {user.email ? user.email.charAt(0).toUpperCase() : 'U'}
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <span className="text-[10px] text-white uppercase tracking-wider">Change</span>
+                        </div>
+                      </div>
+                      <input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        className="hidden" 
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            if (file.size > 1024 * 1024) {
+                              alert("Profile photo must be smaller than 1MB.");
+                              return;
+                            }
+                            setEditAvatarFile(file);
+                            const reader = new FileReader();
+                            reader.onload = (re) => setEditAvatarPreview(re.target?.result as string);
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                      <div className="w-full">
+                        <label className="text-[10px] text-blue-300 uppercase tracking-wider mb-1 block">Full Name</label>
+                        <input 
+                          type="text" 
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          className="w-full bg-white/5 border border-white/20 rounded-lg px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-purple-400 transition-colors"
+                          placeholder="Your Name"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => {
+                          setIsEditingProfile(false);
+                          setEditAvatarFile(null);
+                          setEditAvatarPreview(null);
+                        }}
+                        disabled={isSavingProfile}
+                        className="flex-1 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 text-xs font-bold transition-colors uppercase tracking-wider disabled:opacity-50"
+                      >
+                        Cancel
+                      </button>
+                      <button 
+                        onClick={handleSaveProfile}
+                        disabled={isSavingProfile}
+                        className="flex-1 py-2 rounded-xl bg-purple-600/60 hover:bg-purple-600/80 border border-purple-400/50 text-white text-xs font-bold transition-colors uppercase tracking-wider disabled:opacity-50"
+                      >
+                        {isSavingProfile ? 'Saving...' : 'Save'}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+                      <div className="w-12 h-12 rounded-full flex flex-shrink-0 items-center justify-center border border-white/20 overflow-hidden relative group">
+                        {user.user_metadata?.avatar_url ? (
+                          <img src={user.user_metadata.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-tr from-purple-600 to-blue-500 flex items-center justify-center text-white font-bold text-xl">
+                            {user.email ? user.email.charAt(0).toUpperCase() : 'U'}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <span className="text-white font-semibold text-sm truncate">{user.user_metadata?.full_name || 'Devotee'}</span>
+                        <span className="text-blue-300 text-[11px] truncate w-full block">{user.email}</span>
+                      </div>
+                      <button 
+                        onClick={() => {
+                          setEditName(user.user_metadata?.full_name || '');
+                          setEditAvatarFile(null);
+                          setEditAvatarPreview(null);
+                          setIsEditingProfile(true);
+                        }}
+                        className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-colors flex-shrink-0"
+                        title="Edit Profile"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                      </button>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <div className="text-xs text-gray-400">
+                        <span className="block mb-1 font-semibold uppercase tracking-wider">Lifetime Stats</span>
+                        <div className="flex justify-between items-center bg-white/5 p-2.5 rounded-lg mb-1.5">
+                          <span>Total Rounds:</span>
+                          <span className="text-emerald-300 font-bold">{lifetimeRounds}</span>
+                        </div>
+                        <div className="flex justify-between items-center bg-white/5 p-2.5 rounded-lg">
+                          <span>Total Count:</span>
+                          <span className="text-purple-300 font-bold">{lifetimeCounts}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => {
+                        setIsProfileOpen(false);
+                        supabase.auth.signOut();
+                      }} 
+                      className="mt-2 w-full py-2.5 rounded-xl bg-red-500/20 hover:bg-red-500/40 border border-red-500/30 text-red-300 text-sm font-bold transition-colors uppercase tracking-wider shadow-lg"
+                    >
+                      Sign Out
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         ) : (

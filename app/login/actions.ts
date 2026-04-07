@@ -34,12 +34,11 @@ export async function signup(formData: FormData) {
 
 export async function signInWithGoogle() {
     const supabase = await createClient();
-    const headersList = await headers();
-    const host = headersList.get('host');
-    const protocol = headersList.get('x-forwarded-proto') || 'http';
-
-    // We construct the origin dynamically
-    const origin = `${protocol}://${host}`;
+    
+    // Build robust redirect URL taking Vercel into account
+    let origin = process?.env?.NEXT_PUBLIC_SITE_URL ?? process?.env?.NEXT_PUBLIC_VERCEL_URL ?? 'http://localhost:3000';
+    origin = origin.startsWith('http') ? origin : `https://${origin}`;
+    origin = origin.endsWith('/') ? origin.slice(0, -1) : origin;
 
     const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
